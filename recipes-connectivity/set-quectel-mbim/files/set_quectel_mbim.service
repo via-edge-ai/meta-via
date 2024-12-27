@@ -1,0 +1,12 @@
+[Unit]
+Description=Check/Set Quectel LTE module to MBIM mode Service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/set-quectel-mbim.sh start
+ExecStop=/usr/bin/set-quectel-mbim.sh stop
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+

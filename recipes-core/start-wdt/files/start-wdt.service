@@ -1,0 +1,11 @@
+[Unit]
+Description=Start MCU WDT
+After=mcu_rtc_sync.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=true
+ExecStart=/usr/bin/start-wdt.sh /dev/ttyS1
+
+[Install]
+WantedBy=multi-user.target

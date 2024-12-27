@@ -1,0 +1,29 @@
+#!/bin/sh
+
+# udhcpc script edited by Tim Riker <Tim@Rikers.org>
+
+[ -z "$1" ] && echo "Error: should be called from udhcpc" && exit 1
+
+RESOLV_CONF="/etc/resolv.conf"
+DNS1=8.8.8.8
+DNS2=8.8.4.4
+
+case "$1" in
+	deconfig)
+		;;
+
+	renew|bound)
+		dns_set=`grep "nameserver" $RESOLV_CONF | grep $DNS1 | wc -l`
+		if [ ${dns_set} -eq 0 ]; then
+			echo "$0: Adding DNS $DNS1"
+			echo "nameserver $DNS1" >> "$RESOLV_CONF"
+		fi
+		dns_set=`grep "nameserver" $RESOLV_CONF | grep $DNS2 | wc -l`
+		if [ ${dns_set} -eq 0 ]; then
+			echo "$0: Adding DNS $DNS2"
+			echo "nameserver $DNS2" >> "$RESOLV_CONF"
+		fi
+		;;
+esac
+
+exit 0

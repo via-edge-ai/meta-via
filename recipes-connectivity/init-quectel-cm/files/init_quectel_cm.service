@@ -1,0 +1,12 @@
+[Unit]
+Description=Init Quectel CM Service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/init-quectel-cm.sh start
+ExecStop=/usr/bin/init-quectel-cm.sh stop
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+

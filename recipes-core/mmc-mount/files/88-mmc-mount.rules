@@ -1,0 +1,4 @@
+KERNEL!="mmcblk1p1",GOTO="automount_exit"
+ACTION=="add", SUBSYSTEM=="block",RUN+="/bin/mkdir /mnt/sd",RUN+="/usr/bin/systemd-mount --no-block $devnode /mnt/sd"
+ACTION=="remove", RUN+="/usr/bin/systemd-umount /mnt/sd",RUN+="/bin/rmdir /mnt/sd"
+LABEL="automount_exit"
