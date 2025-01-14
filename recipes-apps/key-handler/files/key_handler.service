@@ -1,0 +1,14 @@
+[Unit]
+Description=VIA Key Handler
+After=android-tools-adbd.service
+
+[Service]
+Environment="ARG1=0"
+ExecStart=/usr/bin/key_handler.sh
+Type=simple
+StandardOutput=tty
+StandardError=tty
+
+[Install]
+Alias=iBathroom
+WantedBy=multi-user.target

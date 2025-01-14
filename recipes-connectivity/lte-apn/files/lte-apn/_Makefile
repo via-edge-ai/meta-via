@@ -1,0 +1,52 @@
+include $(NVT_PRJCFG_MODEL_CFG)
+#--------- ENVIRONMENT SETTING --------------------
+INCLUDES	= -I. -I$(LIBRARY_DIR)/output/include -I$(LIBRARY_DIR)/output/include/libxml2 -I$(LIBRARY_DIR)/viacommon -I$(LIBRARY_DIR)/nvtgpio -I$(LIBRARY_DIR)/WMTUtil/inc -I$(LIBRARY_DIR)/wifi_api
+WARNING	= -Wall -Wundef -Wsign-compare -Wno-missing-braces
+COMPILE_OPTS	= $(INCLUDES) -O2 -fPIC -ffunction-sections -fdata-sections
+CPPFLAGS	=
+CFLAGS		= $(PLATFORM_CFLAGS) $(PRJCFG_CFLAGS)
+C_FLAGS		= $(COMPILE_OPTS) $(CPPFLAGS) $(CFLAGS) $(WARNING)
+LD_FLAGS	= -fPIC -shared -L$(LIBRARY_DIR)/nvtgpio -L$(LIBRARY_DIR)/output/lib -Wl,-rpath-link=$(LIBRARY_DIR)/output/lib -lxml2 -lviacommon -lnvtgpio -lpthread -lwmtutil -lwifi_api
+#--------- END OF ENVIRONMENT SETTING -------------
+DEP_LIBRARIES := nvt@lib@nvtgpio nvt@lib@wifi_api
+
+#--------- Compiling --------------------
+LIB_NAME=liblte_api
+INC = xmlparser.h at_tok.h lte_api.h lte_msg_handler.h
+INC_PROTECT =
+SRC = xmlparser.cpp at_tok.cpp lte_api.cpp lte_msg_handler.cpp lte_msg_server.cpp
+HEADER = $(shell find . -name "*.h")
+
+copy = if [ ! -z "$(1)" -a "$(1)" != " " ]; then cp -avf $(1) $(2); fi
+
+OBJ = $(SRC:.cpp=.o)
+
+ifeq ("$(wildcard *.cpp */*.cpp)","")
+all:
+	@echo ">>> Skip"
+clean:
+	@echo ">>> Skip"
+install_header:
+	@echo ">>> Skip"
+else
+all : $(OBJ)
+	$(CXX) -o $(LIB_NAME).so $(OBJ) $(LD_FLAGS)
+	$(AR) rcs $(LIB_NAME).a *.o
+
+%.o:%.cpp $(HEADER)
+	$(CXX) $(C_FLAGS) $< -c
+
+clean:
+	rm -vf $(OBJ) *.o *.a *.so*
+
+install_header:
+	@mkdir -p $(LIBRARY_DIR)/output/include
+	@$(call copy, $(INC), $(LIBRARY_DIR)/output/include)
+	@$(call copy, $(INC_PROTECT), $(LIBRARY_DIR)/output/include/protected)
+endif
+
+install: install_header
+	@mkdir -p $(LIBRARY_DIR)/output/lib
+	@cp -avf *.a *.so $(LIBRARY_DIR)/output/lib
+	@mkdir -p $(ROOTFS_DIR)/rootfs/lib
+	@cp -avf *.so $(ROOTFS_DIR)/rootfs/lib

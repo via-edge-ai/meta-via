@@ -1,0 +1,13 @@
+[Unit]
+Description=RTC_SYNC
+After=time-set.target getty@tty1.service weston.service
+
+[Service]
+Type=simple
+ExecStart=nohup /usr/bin/rtc_sync.sh >/dev/null
+StandardOutput=tty
+StandardError=tty
+
+
+[Install]
+WantedBy=multi-user.target
