@@ -1,0 +1,9 @@
+#!/bin/sh
+
+ip=`mbimcli -d /dev/cdc-wdm0 --device-open-proxy --query-ip-configuration | grep "IP " | head -n 1 | awk -F"'" '{print $2}'`
+if [ -n "$ip" ]; then
+    echo "$ip"
+    ip addr add "$ip" dev wwan0
+    ip link set wwan0 up
+    ip rout add default dev wwan0
+fi
