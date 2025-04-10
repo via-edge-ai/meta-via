@@ -3,6 +3,7 @@ LICENSE = "CLOSED"
 inherit systemd
 SRC_URI = " \
 	file://mcu_rtc_sync.service \
+	file://systemd-timedated.service \
 	file://rtc_sync.sh \
 "
 
@@ -15,9 +16,12 @@ do_install() {
      install -D -m 0755 ${WORKDIR}/rtc_sync.sh ${D}${bindir}/rtc_sync.sh
      install -d ${D}${systemd_unitdir}/system
      install -m 644 ${WORKDIR}/mcu_rtc_sync.service ${D}${systemd_unitdir}/system
+     install -d ${D}${sysconfdir}/systemd/system
+     install -m 644 ${WORKDIR}/systemd-timedated.service ${D}${sysconfdir}/systemd/system
 }
 
 FILES:${PN} += " \
 	${bindir}/rtc_sync.sh \
 	${systemd_unitdir}/system/mcu_rtc_sync.service \
+	${sysconfdir}/systemd/system/systemd-timedated.service \
 "

@@ -1,7 +1,28 @@
 #!/bin/sh
 #//#!/bin/bash
 
+#2025.02.10
+ver="1.2.0"
 #//=========================================================
+vplat_sel()
+{
+    #//local OSRV=`cat /etc/os-release | grep 'PRETTY_NAME=' | sed 's/PRETTY_NAME=//g'`;
+    #//local OSRV=`cat /etc/os-release | grep 'ID=rity-vis' | sed 's/ID=//g'`;
+    local OSRV=`cat /etc/os-release | grep 'ID=' | awk 'NR==1 {print $1}' | sed 's/ID=//g'`;
+    OSRV=`echo $OSRV | xargs`;
+    OSRV=`echo "$OSRV" | awk '{print $1}'`;
+    echo "===> $OSRV";
+    #//if [ "$OSRV" = "VIA" ]; then
+    if [ "$OSRV" = "rity-vis" ]; then
+        lvu=0; ## yocto
+    elif [ "$OSRV" = "ubuntu" ]; then
+        lvu=1;
+    elif [ "$OSRV" = "debian" ]; then
+        lvu=1;
+    else
+        lvu=1;
+    fi;
+}
 vplay_set()
 {
     plv=
@@ -50,16 +71,20 @@ vplay_set()
             ;;
     esac
 
+    vplat_sel
     if [ "${lvu}" != "1" ]; then
     case "${lva}" in
         2)
             plv10="alsasink device=\"hw:0,0\""
+            #[yocto]headphone
             ;;
         1)
             plv10="alsasink device=\"hw:0,5\""
+            #[yocto]hdmi
             ;;
         *)
             plv10="autoaudiosink"
+            #[ubuntu]
             ;;
     esac
     fi
@@ -67,7 +92,7 @@ vplay_set()
 vplay_cmd()
 {
     plv=
-
+    ###plv="${plv} ${plv0}"
     plv="${plv} ${plv1}"
     plv="${plv} ${plv2}"
 
@@ -318,6 +343,8 @@ syntax_dbg()
 }
 syntax_default()
 {
+    echo "vplay (version: $ver)"
+    #echo "version: $ver"
     ##--------------
     lvs=1
     lvu=0
@@ -341,7 +368,7 @@ syntax_check()
         if [ -n "$1" ]; then
             case "${1}" in
                 -v)
-                    echo "version: 1.0.0"
+                    echo "version: $ver"
                     ;;
                 -h)
                     syntax_type_usage
@@ -357,7 +384,7 @@ syntax_check()
         if [ -n "$1" ]; then
             case "${1}" in
                 -v)
-                    echo "version: 1.0.0"
+                    echo "version: $ver"
                     ;;
                 -h)
                     syntax_args_usage

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION="0.0.4"
+VERSION="0.0.6"
 DEBUG=0
 
 #input parameter
@@ -13,6 +13,7 @@ HEIGHT="720"
 FPS="false"
 ENCTYPE="h264"
 ENCSTRING="v4l2h264enc ! h264parse"
+POS=""
 
 #CSI camera device
 CSI_NAME=("mtkcam" "mtkcam" "mtkcam")
@@ -125,6 +126,12 @@ find_csi_port_dev()
 		(( index++ ))
 	done
 
+	if [ $DEBUG -eq 1 ]; then
+		echo "CSI 0 => ${CSI_NAME[0]} ${CSI_TYPE[0]}"
+		echo "CSI 1 => ${CSI_NAME[1]} ${CSI_TYPE[1]}"
+		echo "CSI 2 => ${CSI_NAME[2]} ${CSI_TYPE[2]}"
+	fi
+
 	#sort the sensor id to map mtkcam id
 	index=0
 	local tmp_idx=0
@@ -148,6 +155,7 @@ find_csi_port_dev()
 	tmp_idx=0
 	while [ $tmp_idx -lt ${#sorted[@]} ]
 	do
+		index=0
 		while [ $index -lt 3 ]
 		do
 			if [ "${sorted[$tmp_idx]}" == "${CSI_NAME[$index]}" ]; then
@@ -386,7 +394,7 @@ run_camera()
 		echo "device: ${CSI_DEV[$CAMID]} start preview"
 		gst-launch-1.0 -e v4l2src device="${CSI_DEV[$dev_id]}" ! video/x-raw,width=${SEN_W},height=${SEN_H},format=UYVY \
 			! v4l2convert output-io-mode=dmabuf-import ! video/x-raw,width=${WIDTH},height=${HEIGHT} \
-			! fpsdisplaysink text-overlay="$FPS" sync=false video-sink="waylandsink sync=false"
+			! fpsdisplaysink text-overlay="$FPS" sync=false video-sink="waylandsink sync=false pos=$POS"
 	elif [ "$MODE" == "capture" ]; then
 		echo "device: ${CSI_DEV[$CAMID]} start capture"
 		SEN_W="1920"
@@ -423,17 +431,17 @@ run_csi_camera()
 	#Check Cam id is exist
 	videodev=(`v4l2-ctl --list-devices | grep -P "mtk-v4l2-camera.*${CSI_NAME[$CAMID]}" -A 3 | grep -P "video" | tr -d "\n"`)
 	if [ "${videodev[0]}" == "" ]; then
-		echo "Can not find CSI port: $CSI_PORT, (${CSI_NAME[$CAMID]})"
+		echo "Can not find CSI port: $CAMID, (${CSI_NAME[$CAMID]})"
 		return
 	fi
 
-	FILE_NAME=$(echo "$CAMTYPE-camera-$CSI_PORT-$MODE-${SEN_W}x${SEN_H}")
+	FILE_NAME=$(echo "$CAMTYPE-camera-$CAMID-$MODE-${SEN_W}x${SEN_H}")
 
 	if [ "$MODE" == "preview" ]; then
 		echo "device: ${videodev[0]}"
 		gst-launch-1.0 -e v4l2src device="${videodev[0]}" ! video/x-raw,width=${SEN_W},height=${SEN_H},format=YUY2 \
 			! v4l2convert ! video/x-raw,width=${WIDTH},height=${HEIGHT} \
-			! fpsdisplaysink text-overlay="$FPS" sync=false video-sink="waylandsink sync=false"
+			! fpsdisplaysink text-overlay="$FPS" sync=false video-sink="waylandsink sync=false pos=$POS"
 	elif [ "$MODE" == "capture" ]; then
 		echo "device: ${videodev[2]}"
 		get_resolution ${videodev[2]} 0 "JFIF" 10
@@ -483,7 +491,7 @@ run_ahd_camera()
 		echo "device: ${VIDEO_DEV[0]} start preview"
 		gst-launch-1.0 -e v4l2src device="${VIDEO_DEV[0]}" ! video/x-raw,width=${SEN_W},height=${SEN_H},format=UYVY \
 			! v4l2convert output-io-mode=dmabuf-import ! video/x-raw,width=${WIDTH},height=${HEIGHT} \
-			! fpsdisplaysink text-overlay="$FPS" sync=false video-sink="waylandsink sync=false"
+			! fpsdisplaysink text-overlay="$FPS" sync=false video-sink="waylandsink sync=false pos=$POS"
 	elif [ "$MODE" == "capture" ]; then
 		echo "device: ${VIDEO_DEV[0]} start capture"
 		SEN_W="1920"
@@ -533,7 +541,7 @@ run_usb_camera()
 		echo "device: ${UVC_DEV[$CAMID]}"
 		gst-launch-1.0 -e v4l2src device="${UVC_DEV[$CAMID]}" ! image/jpeg,width=${SEN_W},height=${SEN_H},framerate=30/1 \
 			! jpegdec ! v4l2convert ! video/x-raw,width=${WIDTH},height=${HEIGHT} \
-			! fpsdisplaysink text-overlay="$FPS" sync=false video-sink="waylandsink sync=false"
+			! fpsdisplaysink text-overlay="$FPS" sync=false video-sink="waylandsink sync=false pos=$POS"
 	elif [ "$MODE" == "capture" ]; then
 		echo "device: ${UVC_DEV[$CAMID]}, SEN_W: $SEN_W, SEN_H: $SEN_H"
 		gst-launch-1.0 -e v4l2src device="${UVC_DEV[$CAMID]}" num-buffers=1 ! image/jpeg,width=${SEN_W},height=${SEN_H},format=JPEG \
@@ -550,6 +558,33 @@ run_usb_camera()
 	fi
 
 	sync
+}
+
+parse_display_position()
+{
+	local posx=1
+	local posy=1
+	local str=$1
+
+	echo "$str"
+	posx=$(echo $str | tr  "," " " | awk {'print $1'})
+	posy=$(echo $str | tr  "," " " | awk {'print $2'})
+	echo "get posx=$posx, posy=$posy"
+
+	#check X is in range
+	if [ $posx -lt 1 ] || [ $posx -gt 3840 ]; then
+		echo "X is out of range, posx will be set 1"
+		posx=1
+	fi
+
+	#check Y is in range
+	if [ $posy -lt 1 ] || [ $posy -gt 2160 ]; then
+		echo "Y is out of range, posx will be set 1"
+		posy=1
+	fi
+	POS=$(echo "$posx,$posy")
+	echo "POS=$POS"
+
 }
 
 parse_camera_port()
@@ -572,7 +607,7 @@ parse_camera_port()
 parameter_check()
 {
     case $1 in
-        -t | -c | -m | -f | -r | -e)
+        -t | -c | -m | -f | -r | -e | -p)
             PARA1=1
             ;;
         *)
@@ -581,7 +616,7 @@ parameter_check()
     esac
     
     case $2 in
-        -t | -c | -m | -f | -r | -e | --list | --help)
+        -t | -c | -m | -f | -r | -e | -p | --list | --help)
             PARA2=1
             ;;
         *)
@@ -662,6 +697,13 @@ do
 			(( INDEX++ ))
 			shift
 			;;
+		-p)
+			parse_display_position $2
+			#POS=$2
+			echo "Set position to ($POS)"
+			(( INDEX++ ))
+			shift
+			;;
 		*) 	echo "unsupport parameter"
 	esac
 	fi
@@ -669,7 +711,7 @@ do
 	(( INDEX++ ))
 done
 
-echo "cam type: $CAMTYPE, csi port: $CAMID, vc id:$VCID, mode: $MODE, display resolution: ${WIDTH}x${HEIGHT}, codec: $ENCTYPE"
+echo "cam type: $CAMTYPE, csi port: $CAMID, vc id:$VCID, mode: $MODE, display resolution: ${WIDTH}x${HEIGHT}, pos: $POS, codec: $ENCTYPE"
 
 if [ "$CAMTYPE" == "csi" ]; then
 	#echo "Start open CSI camera"
